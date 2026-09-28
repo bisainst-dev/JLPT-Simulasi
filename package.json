@@ -4,9 +4,9 @@
   "private": true,
   "description": "Platform Simulasi Ujian JLPT (N5 - N1) CBT dengan Scoring Engine IRT & Dual Passing Grade",
   "scripts": {
-    "dev": "next dev -p 3005",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3005",
+    "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
