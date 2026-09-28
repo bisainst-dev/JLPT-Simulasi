@@ -1,0 +1,147 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  LPK_ADMIN
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserTier {
+  FREE
+  SILVER
+  GOLD
+  LPK_PARTNER
+}
+
+enum JlptLevel {
+  N1
+  N2
+  N3
+  N4
+  N5
+}
+
+enum SectionType {
+  LANGUAGE_KNOWLEDGE         // N1-N3: 文字・語彙・文法 (60 pts)
+  READING                    // N1-N3: 読解 (60 pts)
+  LISTENING                  // N1-N5: 聴解 (60 pts)
+  LANGUAGE_KNOWLEDGE_READING // N4-N5: 言語知識・読解 (120 pts)
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model User {
+  id                String      @id @default(cuid())
+  name              String
+  email             String      @unique
+  password          String
+  role              Role        @default(STUDENT)
+  tier              UserTier    @default(FREE)
+  lpkId             String?
+  avatarUrl         String?
+  allowedAttempts   Int         @default(1)
+  subscriptionUntil DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  lpk               Lpk?        @relation(fields: [lpkId], references: [id])
+  examAttempts      ExamAttempt[]
+  auditLogs         ImpersonationLog[] @relation("AdminImpersonator")
+  targetAttempts    ImpersonationLog[] @relation("TargetStudent")
+}
+
+model Lpk {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  contact   String?
+  students  User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model JlptQuestion {
+  id            String             @id @default(cuid())
+  level         JlptLevel
+  section       SectionType
+  subCategory   String
+  weight        Float              @default(1.0)
+  difficulty    QuestionDifficulty @default(MEDIUM)
+  instruction   String?
+  text          String
+  passage       String?
+  audioUrl      String?
+  audioScript   String?
+  explanation   String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  options       QuestionOption[]
+  attemptAnswers AttemptAnswer[]
+
+  @@index([level, section])
+}
+
+model QuestionOption {
+  id         String       @id @default(cuid())
+  questionId String
+  key        String
+  text       String
+  imageUrl   String?
+  isCorrect  Boolean      @default(false)
+
+  question   JlptQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    AttemptAnswer[]
+}
+
+model ExamAttempt {
+  id                 String       @id @default(cuid())
+  userId             String
+  level              JlptLevel
+  status             String       @default("IN_PROGRESS")
+  totalScaledScore   Int          @default(0)
+  isPassed           Boolean      @default(false)
+  sectionalScores    String?
+  failureReason      String?
+  startedAt          DateTime     @default(now())
+  completedAt        DateTime?
+
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers            AttemptAnswer[]
+}
+
+model AttemptAnswer {
+  id               String          @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  isCorrect        Boolean         @default(false)
+  earnedWeight     Float           @default(0.0)
+
+  attempt          ExamAttempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         JlptQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption   QuestionOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+}
+
+model ImpersonationLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  targetId    String
+  startedAt   DateTime @default(now())
+  ipAddress   String?
+
+  admin       User     @relation("AdminImpersonator", fields: [adminId], references: [id])
+  target      User     @relation("TargetStudent", fields: [targetId], references: [id])
+}
