@@ -31,22 +31,27 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-export const revalidate = 60; // revalidate every minute
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const examPackages = await prisma.examPackage.findMany({
-    where: { published: true },
-    include: {
-      sections: {
-        include: {
-          questions: {
-            select: { id: true },
+  let examPackages: any[] = [];
+  try {
+    examPackages = await prisma.examPackage.findMany({
+      where: { published: true },
+      include: {
+        sections: {
+          include: {
+            questions: {
+              select: { id: true },
+            },
           },
         },
       },
-    },
-    orderBy: { level: 'desc' },
-  });
+      orderBy: { level: 'desc' },
+    });
+  } catch (err) {
+    console.error('Database connection during build or fetch:', err);
+  }
 
   const levelBadges: Record<string, { kanji: string; title: string; desc: string; color: string; bgBadge: string }> = {
     N1: {
