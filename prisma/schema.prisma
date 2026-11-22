@@ -1,0 +1,143 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          String         @default("STUDENT") // ADMIN, STUDENT, LPK_ADMIN
+  tier          String         @default("FREE")    // FREE, SILVER, GOLD, LPK_PARTNER
+  targetLevel   String?        @default("N5")      // Target Level: N5, N4, N3, N2, N1
+  lpkName       String?
+  avatar        String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  attempts      ExamAttempt[]
+  transactions  Transaction[]
+
+  @@map("users")
+}
+
+model ExamPackage {
+  id              String        @id @default(cuid())
+  title           String
+  code            String        @unique
+  level           String        // N1, N2, N3, N4, N5
+  description     String?
+  durationMinutes Int           @default(100)
+  tierRequired    String        @default("FREE") // FREE, SILVER, GOLD, LPK_PARTNER
+  published       Boolean       @default(true)
+  passScoreTotal  Int           @default(90)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  sections        ExamSection[]
+  attempts        ExamAttempt[]
+
+  @@map("exam_packages")
+}
+
+model ExamSection {
+  id               String       @id @default(cuid())
+  examPackageId    String
+  sectionType      String       // VOCABULARY, GRAMMAR, READING, LISTENING, LANGUAGE_KNOWLEDGE_READING
+  name             String       // e.g. "Gengo Chishiki (Moji/Goi)", "Dokkai", "Choukai"
+  timeLimitMinutes Int          @default(30)
+  orderIndex       Int          @default(1)
+  
+  examPackage      ExamPackage  @relation(fields: [examPackageId], references: [id], onDelete: Cascade)
+  questions        Question[]
+
+  @@map("exam_sections")
+}
+
+model Question {
+  id             String       @id @default(cuid())
+  examSectionId  String
+  mondaiNumber   Int          @default(1) // Mondai 1, Mondai 2...
+  questionNumber Int          @default(1) // 1, 2, 3...
+  instruction    String?      // Petunjuk soal, misal: "つぎの ぶんの （ ）には なにを いれますか。"
+  passage        String?      // Dokkai passage text (bisa furigana)
+  audioUrl       String?      // Listening choukai audio link/path
+  imageUrl       String?      // Gambar illustrasi (mondai gambar)
+  content        String       // Teks soal utama (bisa ada [漢字|かんじ] / ruby)
+  options        String       // JSON string of array ["1. 选项一", "2. 选项二", "3. 选项三", "4. 选项四"]
+  correctOption  Int          // 1, 2, 3, or 4
+  explanation    String?      // Penjelasan / pembahasan kunci jawaban
+  weight         Int          @default(1) // 1 = dasar/goi, 2-3 = dokkai/choukai
+  orderIndex     Int          @default(1)
+
+  examSection    ExamSection  @relation(fields: [examSectionId], references: [id], onDelete: Cascade)
+  userAnswers    UserAnswer[]
+
+  @@map("questions")
+}
+
+model ExamAttempt {
+  id             String        @id @default(cuid())
+  userId         String
+  examPackageId  String
+  startedAt      DateTime      @default(now())
+  completedAt    DateTime?
+  status         String        @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, EXPIRED
+  
+  // JLPT Scored scaled up to 180 total
+  scoreTotal     Int           @default(0)
+  scoreSection1  Int           @default(0) // N1-N3: Vocab/Grammar (max 60) | N4-N5: Vocab+Grammar+Reading (max 120)
+  scoreSection2  Int           @default(0) // N1-N3: Reading (max 60) | N4-N5: Listening (max 60)
+  scoreSection3  Int           @default(0) // N1-N3: Listening (max 60) | N4-N5: unused / 0
+  
+  isPassed       Boolean       @default(false)
+  resultDetails  String?       // JSON string of sectional statistics and breakdown
+
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examPackage    ExamPackage   @relation(fields: [examPackageId], references: [id], onDelete: Cascade)
+  answers        UserAnswer[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("exam_attempts")
+}
+
+model UserAnswer {
+  id             String       @id @default(cuid())
+  attemptId      String
+  questionId     String
+  selectedOption Int?         // 1, 2, 3, 4 (null if skipped)
+  isCorrect      Boolean      @default(false)
+  isFlagged      Boolean      @default(false) // Ragu-ragu checkbox
+
+  attempt        ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("user_answers")
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  userId          String
+  targetTier      String   // SILVER, GOLD, LPK_PARTNER
+  amount          Int
+  status          String   @default("PENDING") // PENDING, SETTLEMENT, EXPIRE, CANCEL, DENY
+  paymentType     String?  // qris, bank_transfer, gopay, cstore, etc.
+  snapToken       String?
+  snapRedirectUrl String?
+  metadata        String?  // JSON string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+

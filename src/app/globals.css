@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --maroon-primary: #8C0014;
+    --maroon-dark: #66000e;
+    --gold-accent: #e5aa24;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased font-sans selection:bg-maroon-800 selection:text-white;
+    font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+}
+
+.font-japanese {
+  font-family: "Hiragino Sans", "ヒラギノ角ゴシック", "Hiragino Kaku Gothic ProN", "Hiragino Kaku Gothic Pro", "Segoe UI", "Meiryo", "Yu Gothic", sans-serif;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-panel-dark {
+  background: rgba(140, 0, 20, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -10px rgba(140, 0, 20, 0.15);
+}
+
+/* Hinomaru Motif Background Pattern */
+.bg-hinomaru-subtle {
+  background-color: #fcfbf9;
+  background-image: radial-gradient(#8C0014 0.75px, transparent 0.75px), radial-gradient(#e5aa24 0.5px, #fcfbf9 0.5px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+.bg-hinomaru-hero {
+  background: radial-gradient(circle at 80% 20%, rgba(140, 0, 20, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 10% 80%, rgba(229, 170, 36, 0.07) 0%, transparent 40%),
+              #faf9f6;
+}
+
+/* Ruby Text Style for Japanese */
+ruby {
+  ruby-align: center;
+  ruby-position: over;
+}
+rt {
+  font-size: 0.65em;
+  line-height: 1;
+}
+
+/* Scrollbar Style */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8C0014;
+}
